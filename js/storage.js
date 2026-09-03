@@ -20,8 +20,10 @@ const Storage = (function () {
     const DEFAULT_SETTINGS = {
         userName: "我",
         userAvatar: "",          // 用户头像文字（留空则取名字首字）
+        userAvatarImage: "",     // 用户头像图片 dataURL（优先于文字）
         taName: "TA",
         taAvatar: "",            // TA头像文字（留空则取名字首字）
+        taAvatarImage: "",       // TA头像图片 dataURL（优先于文字）
         theme: "warm",
         background: "default",   // 聊天背景
         typingDelay: 0.8,         // TA回复延迟(秒)

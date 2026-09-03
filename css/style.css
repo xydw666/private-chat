@@ -318,6 +318,12 @@ body {
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
 }
 
+.msg-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .message-row.user .msg-avatar {
     background: var(--avatar-user);
 }
@@ -1096,6 +1102,52 @@ body {
 
 .setting-input:focus {
     border-color: var(--primary);
+}
+
+/* 头像设置行 */
+.avatar-setting-row {
+    flex-wrap: wrap;
+}
+
+.avatar-setting-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.avatar-preview {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 8px;
+    background: var(--avatar-user);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-text-input {
+    width: 60px !important;
+    max-width: 60px !important;
+    text-align: center;
+}
+
+.avatar-upload-btn,
+.avatar-clear-btn {
+    flex-shrink: 0;
 }
 
 /* 开关 */

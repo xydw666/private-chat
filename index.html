@@ -149,17 +149,27 @@
                         <label>我的名字</label>
                         <input type="text" class="setting-input" id="userNameInput" placeholder="我">
                     </div>
-                    <div class="setting-row">
-                        <label>我的头像文字</label>
-                        <input type="text" class="setting-input" id="userAvatarInput" placeholder="留空则取名字首字" maxlength="2">
+                    <div class="setting-row avatar-setting-row">
+                        <label>我的头像</label>
+                        <div class="avatar-setting-right">
+                            <div class="avatar-preview" id="userAvatarPreview"></div>
+                            <input type="text" class="setting-input avatar-text-input" id="userAvatarInput" placeholder="文字" maxlength="2">
+                            <button class="btn-mini avatar-upload-btn" id="userAvatarUploadBtn">上传图片</button>
+                            <button class="btn-mini avatar-clear-btn" id="userAvatarClearBtn" style="display:none;">清除图片</button>
+                        </div>
                     </div>
                     <div class="setting-row">
                         <label>TA的名字</label>
                         <input type="text" class="setting-input" id="taNameInput" placeholder="TA">
                     </div>
-                    <div class="setting-row">
-                        <label>TA的头像文字</label>
-                        <input type="text" class="setting-input" id="taAvatarInput" placeholder="留空则取名字首字" maxlength="2">
+                    <div class="setting-row avatar-setting-row">
+                        <label>TA的头像</label>
+                        <div class="avatar-setting-right">
+                            <div class="avatar-preview" id="taAvatarPreview"></div>
+                            <input type="text" class="setting-input avatar-text-input" id="taAvatarInput" placeholder="文字" maxlength="2">
+                            <button class="btn-mini avatar-upload-btn" id="taAvatarUploadBtn">上传图片</button>
+                            <button class="btn-mini avatar-clear-btn" id="taAvatarClearBtn" style="display:none;">清除图片</button>
+                        </div>
                     </div>
                 </div>
                 <div class="settings-group">

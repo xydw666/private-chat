@@ -80,8 +80,14 @@ const App = (function () {
 
         dom.userNameInput = UI.$("#userNameInput");
         dom.userAvatarInput = UI.$("#userAvatarInput");
+        dom.userAvatarPreview = UI.$("#userAvatarPreview");
+        dom.userAvatarUploadBtn = UI.$("#userAvatarUploadBtn");
+        dom.userAvatarClearBtn = UI.$("#userAvatarClearBtn");
         dom.taNameInput = UI.$("#taNameInput");
         dom.taAvatarInput = UI.$("#taAvatarInput");
+        dom.taAvatarPreview = UI.$("#taAvatarPreview");
+        dom.taAvatarUploadBtn = UI.$("#taAvatarUploadBtn");
+        dom.taAvatarClearBtn = UI.$("#taAvatarClearBtn");
         dom.typingDelayInput = UI.$("#typingDelayInput");
         dom.typingAnimToggle = UI.$("#typingAnimToggle");
         dom.showTimeToggle = UI.$("#showTimeToggle");
@@ -117,6 +123,29 @@ const App = (function () {
         return name.charAt(0).toUpperCase();
     }
 
+    function _getUserAvatarImage() {
+        return Settings.getOne("userAvatarImage") || "";
+    }
+
+    function _getTaAvatarImage() {
+        return Settings.getOne("taAvatarImage") || "";
+    }
+
+    /**
+     * 设置头像元素内容（文字或图片）
+     */
+    function _setAvatarContent(avatarEl, text, imageData) {
+        avatarEl.innerHTML = "";
+        if (imageData) {
+            const img = UI.createElement("img");
+            img.src = imageData;
+            img.alt = "头像";
+            avatarEl.appendChild(img);
+        } else {
+            avatarEl.textContent = text;
+        }
+    }
+
     // ============================================
     // 渲染：聊天消息
     // ============================================
@@ -133,6 +162,8 @@ const App = (function () {
         const showTime = Settings.getOne("showTimestamp");
         const userAvatarText = _getUserAvatarText();
         const taAvatarText = _getTaAvatarText();
+        const userAvatarImage = _getUserAvatarImage();
+        const taAvatarImage = _getTaAvatarImage();
 
         messages.forEach((msg, i) => {
             const dateKey = UI.getDateKey(msg.timestamp);
@@ -144,8 +175,9 @@ const App = (function () {
             }
 
             const avatarText = msg.sender === "user" ? userAvatarText : taAvatarText;
+            const avatarImage = msg.sender === "user" ? userAvatarImage : taAvatarImage;
             const prevMsg = i > 0 ? messages[i - 1] : null;
-            dom.chatMessages.appendChild(_createMessageElement(msg, showTime, avatarText, prevMsg));
+            dom.chatMessages.appendChild(_createMessageElement(msg, showTime, avatarText, avatarImage, prevMsg));
         });
 
         UI.scrollToBottom(false);
@@ -167,7 +199,7 @@ const App = (function () {
      * 头像 + 气泡（带尖角），用户在右，TA在左
      * 连续同方向消息（60秒内）只显示第一个头像
      */
-    function _createMessageElement(msg, showTime, avatarText, prevMsg) {
+    function _createMessageElement(msg, showTime, avatarText, avatarImage, prevMsg) {
         const row = UI.createElement("div", `message-row ${msg.sender}`);
 
         // 判断是否为连续消息（同一发送者且60秒内）
@@ -180,7 +212,7 @@ const App = (function () {
         if (isContinuous) {
             avatar.classList.add("avatar-hidden");
         } else {
-            avatar.textContent = avatarText;
+            _setAvatarContent(avatar, avatarText, avatarImage);
         }
         row.appendChild(avatar);
 
@@ -211,6 +243,7 @@ const App = (function () {
 
         const showTime = Settings.getOne("showTimestamp");
         const avatarText = msg.sender === "user" ? _getUserAvatarText() : _getTaAvatarText();
+        const avatarImage = msg.sender === "user" ? _getUserAvatarImage() : _getTaAvatarImage();
 
         const messages = Chat.getAll();
         const prevMsg = messages.length > 1 ? messages[messages.length - 2] : null;
@@ -220,7 +253,7 @@ const App = (function () {
             dom.chatMessages.appendChild(sep);
         }
 
-        dom.chatMessages.appendChild(_createMessageElement(msg, showTime, avatarText, prevMsg));
+        dom.chatMessages.appendChild(_createMessageElement(msg, showTime, avatarText, avatarImage, prevMsg));
         UI.scrollToBottom(true);
     }
 
@@ -233,7 +266,7 @@ const App = (function () {
         row.id = "typingRow";
 
         const avatar = UI.createElement("div", "msg-avatar");
-        avatar.textContent = _getTaAvatarText();
+        _setAvatarContent(avatar, _getTaAvatarText(), _getTaAvatarImage());
         row.appendChild(avatar);
 
         const wrapper = UI.createElement("div", "bubble-wrapper");
@@ -422,9 +455,44 @@ const App = (function () {
         dom.showTimeToggle.checked = s.showTimestamp;
         dom.bgSelect.value = s.background || "default";
 
+        // 头像预览
+        _updateAvatarPreview("user");
+        _updateAvatarPreview("ta");
+
         UI.$$(".theme-dot").forEach((dot) => {
             dot.classList.toggle("active", dot.dataset.theme === s.theme);
         });
+    }
+
+    /**
+     * 更新头像预览
+     * type: "user" | "ta"
+     */
+    function _updateAvatarPreview(type) {
+        const preview = type === "user" ? dom.userAvatarPreview : dom.taAvatarPreview;
+        const clearBtn = type === "user" ? dom.userAvatarClearBtn : dom.taAvatarClearBtn;
+        const imageData = type === "user" ? _getUserAvatarImage() : _getTaAvatarImage();
+        const text = type === "user" ? _getUserAvatarText() : _getTaAvatarText();
+
+        preview.innerHTML = "";
+        if (imageData) {
+            const img = UI.createElement("img");
+            img.src = imageData;
+            img.alt = "头像预览";
+            preview.appendChild(img);
+            clearBtn.style.display = "";
+        } else {
+            preview.textContent = text;
+            clearBtn.style.display = "none";
+        }
+
+        // 预览背景色跟随身份
+        preview.style.background = type === "user"
+            ? "var(--avatar-user)"
+            : "var(--avatar-ta)";
+        if (imageData) {
+            preview.style.background = "none";
+        }
     }
 
     function renderHeader() {
@@ -584,6 +652,35 @@ const App = (function () {
                 grid.appendChild(btn);
             }
         });
+    }
+
+    /**
+     * 处理头像图片上传
+     * type: "user" | "ta"
+     */
+    function _handleAvatarUpload(type) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                UI.toast("图片需小于 5MB");
+                return;
+            }
+            try {
+                const dataUrl = await _compressImage(file, 128);
+                const key = type === "user" ? "userAvatarImage" : "taAvatarImage";
+                Settings.set(key, dataUrl);
+                _updateAvatarPreview(type);
+                renderMessages();
+                UI.toast("头像图片已设置");
+            } catch (err) {
+                UI.toast("图片处理失败");
+            }
+        });
+        input.click();
     }
 
     /**
@@ -792,23 +889,48 @@ const App = (function () {
         // --- 设置项：个人信息 ---
         dom.userNameInput.addEventListener("change", () => {
             Settings.set("userName", dom.userNameInput.value || "我");
+            _updateAvatarPreview("user");
+            renderMessages();
             UI.toast("已保存");
         });
         dom.userAvatarInput.addEventListener("change", () => {
             Settings.set("userAvatar", dom.userAvatarInput.value.trim());
+            _updateAvatarPreview("user");
             renderMessages();
             UI.toast("已保存");
         });
         dom.taNameInput.addEventListener("change", () => {
             Settings.set("taName", dom.taNameInput.value || "TA");
             renderHeader();
+            _updateAvatarPreview("ta");
             renderMessages();
             UI.toast("已保存");
         });
         dom.taAvatarInput.addEventListener("change", () => {
             Settings.set("taAvatar", dom.taAvatarInput.value.trim());
+            _updateAvatarPreview("ta");
             renderMessages();
             UI.toast("已保存");
+        });
+
+        // --- 头像图片上传 ---
+        dom.userAvatarUploadBtn.addEventListener("click", () => {
+            _handleAvatarUpload("user");
+        });
+        dom.taAvatarUploadBtn.addEventListener("click", () => {
+            _handleAvatarUpload("ta");
+        });
+        dom.userAvatarClearBtn.addEventListener("click", () => {
+            Settings.set("userAvatarImage", "");
+            _updateAvatarPreview("user");
+            renderMessages();
+            UI.toast("已清除头像图片");
+        });
+        dom.taAvatarClearBtn.addEventListener("click", () => {
+            Settings.set("taAvatarImage", "");
+            _updateAvatarPreview("ta");
+            renderMessages();
+            UI.toast("已清除头像图片");
         });
 
         // --- 设置项：对话体验 ---
