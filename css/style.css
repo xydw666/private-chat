@@ -364,6 +364,16 @@ body {
     max-width: 100%;
 }
 
+/* 气泡内图片表情 */
+.bubble-emoji-img {
+    max-width: 80px;
+    max-height: 80px;
+    vertical-align: middle;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 2px;
+}
+
 /* 微信风格气泡尖角 */
 .message-row.user .bubble {
     background: var(--bubble-user);

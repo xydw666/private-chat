@@ -155,6 +155,51 @@ const App = (function () {
         }
     }
 
+    /**
+     * 渲染气泡内容 - 支持混合文本和图片
+     * 图片用 {{img}}dataURL{{/img}} 标记
+     */
+    function _renderBubbleContent(bubble, text) {
+        bubble.innerHTML = "";
+        const imgPattern = /\{\{img\}\}([\s\S]*?)\{\{\/img\}\}/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = imgPattern.exec(text)) !== null) {
+            // 添加图片前的文本
+            if (match.index > lastIndex) {
+                const textPart = text.slice(lastIndex, match.index);
+                if (textPart) {
+                    const span = UI.createElement("span");
+                    span.textContent = textPart;
+                    bubble.appendChild(span);
+                }
+            }
+            // 添加图片
+            const img = UI.createElement("img");
+            img.className = "bubble-emoji-img";
+            img.src = match[1];
+            img.alt = "表情";
+            bubble.appendChild(img);
+            lastIndex = match.index + match[0].length;
+        }
+
+        // 添加剩余文本
+        if (lastIndex < text.length) {
+            const remaining = text.slice(lastIndex);
+            if (remaining) {
+                const span = UI.createElement("span");
+                span.textContent = remaining;
+                bubble.appendChild(span);
+            }
+        }
+
+        // 如果没有内容（纯图片被删除等情况）
+        if (bubble.childNodes.length === 0) {
+            bubble.textContent = text;
+        }
+    }
+
     // ============================================
     // 渲染：聊天消息
     // ============================================
@@ -229,7 +274,7 @@ const App = (function () {
         const wrapper = UI.createElement("div", "bubble-wrapper");
 
         const bubble = UI.createElement("div", "bubble");
-        bubble.textContent = msg.text;
+        _renderBubbleContent(bubble, msg.text);
         wrapper.appendChild(bubble);
 
         // 连续消息不显示时间戳（减少视觉噪音）
@@ -895,20 +940,26 @@ const App = (function () {
 
     /**
      * 向输入框插入文本或图片
+     * 图片用短占位符 [图] 显示在输入框，实际 dataURL 暂存待发送时替换
      */
+    let _pendingImages = []; // 待发送的图片 dataURL 队列
+
     function _insertText(content, isImage) {
         const start = dom.messageInput.selectionStart;
         const end = dom.messageInput.selectionEnd;
         const text = dom.messageInput.value;
         if (isImage) {
-            // 图片用 markdown 风格占位（当前版本直接插入 dataURL 太长，
-            // 实际发送时图片会以特殊格式显示）
-            dom.messageInput.value = text.slice(0, start) + content + text.slice(end);
+            // 插入短占位符到输入框，dataURL 暂存
+            const placeholder = "[图]";
+            _pendingImages.push(content);
+            dom.messageInput.value = text.slice(0, start) + placeholder + text.slice(end);
+            dom.messageInput.focus();
+            dom.messageInput.selectionStart = dom.messageInput.selectionEnd = start + placeholder.length;
         } else {
             dom.messageInput.value = text.slice(0, start) + content + text.slice(end);
+            dom.messageInput.focus();
+            dom.messageInput.selectionStart = dom.messageInput.selectionEnd = start + content.length;
         }
-        dom.messageInput.focus();
-        dom.messageInput.selectionStart = dom.messageInput.selectionEnd = start + content.length;
         UI.autoResizeTextarea(dom.messageInput);
     }
 
@@ -981,8 +1032,20 @@ const App = (function () {
     // 消息发送
     // ============================================
     function sendMessage() {
-        const text = dom.messageInput.value.trim();
+        let text = dom.messageInput.value.trim();
         if (!text) return;
+
+        // 将 [图] 占位符替换为 {{img}}dataURL{{/img}} 标记
+        let imgIdx = 0;
+        text = text.replace(/\[图\]/g, () => {
+            if (imgIdx < _pendingImages.length) {
+                return "{{img}}" + _pendingImages[imgIdx++] + "{{/img}}";
+            }
+            return "";
+        });
+        _pendingImages = []; // 清空待发送队列
+
+        if (!text.trim()) return;
 
         dom.messageInput.value = "";
         UI.autoResizeTextarea(dom.messageInput);
@@ -1009,6 +1072,10 @@ const App = (function () {
         });
         dom.messageInput.addEventListener("input", () => {
             UI.autoResizeTextarea(dom.messageInput);
+            // 如果输入框没有 [图] 占位符了，清空待发送图片队列
+            if (!dom.messageInput.value.includes("[图]")) {
+                _pendingImages = [];
+            }
         });
 
         // --- 表情 ---
