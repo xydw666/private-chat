@@ -1,0 +1,6 @@
+.screenshots/
+.trae-html-share-packages/
+.uploads/
+*.log
+.DS_Store
+node_modules/
