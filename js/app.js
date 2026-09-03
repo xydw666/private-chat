@@ -46,7 +46,6 @@ const App = (function () {
         dom.emojiTabDefault = UI.$("#emojiTabDefault");
         dom.emojiTabCustom = UI.$("#emojiTabCustom");
         dom.customEmojiGrid = UI.$("#customEmojiGrid");
-        dom.addTextEmojiBtn = UI.$("#addTextEmojiBtn");
         dom.addImageEmojiBtn = UI.$("#addImageEmojiBtn");
 
         dom.taName = UI.$("#taName");
@@ -158,10 +157,13 @@ const App = (function () {
     /**
      * 渲染气泡内容 - 支持混合文本和图片
      * 图片用 {{img}}dataURL{{/img}} 标记
+     * 兼容旧版直接存入的 data:image base64 文本
      */
     function _renderBubbleContent(bubble, text) {
         bubble.innerHTML = "";
-        const imgPattern = /\{\{img\}\}([\s\S]*?)\{\{\/img\}\}/g;
+
+        // 匹配 {{img}}...{{/img}} 标记，或裸 data:image base64 字符串
+        const imgPattern = /\{\{img\}\}([\s\S]*?)\{\{\/img\}\}|data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+/g;
         let lastIndex = 0;
         let match;
 
@@ -175,10 +177,11 @@ const App = (function () {
                     bubble.appendChild(span);
                 }
             }
-            // 添加图片
+            // 添加图片（match[1] 是 {{img}} 标记内的内容，否则 match[0] 本身是 data URL）
+            const imgUrl = match[1] || match[0];
             const img = UI.createElement("img");
             img.className = "bubble-emoji-img";
-            img.src = match[1];
+            img.src = imgUrl;
             img.alt = "表情";
             bubble.appendChild(img);
             lastIndex = match.index + match[0].length;
@@ -194,7 +197,7 @@ const App = (function () {
             }
         }
 
-        // 如果没有内容（纯图片被删除等情况）
+        // 如果没有内容，直接显示原始文本
         if (bubble.childNodes.length === 0) {
             bubble.textContent = text;
         }
@@ -766,20 +769,6 @@ const App = (function () {
                 dom.emojiTabCustom.style.display = isCustom ? "" : "none";
                 if (isCustom) _renderCustomEmojis();
             });
-        });
-
-        // 添加文字表情
-        dom.addTextEmojiBtn.addEventListener("click", () => {
-            const text = prompt("输入自定义表情（文字/emoji）：");
-            if (text && text.trim()) {
-                Storage.addEmoji({
-                    id: Storage.generateId("emoji"),
-                    type: "text",
-                    content: text.trim(),
-                });
-                _renderCustomEmojis();
-                UI.toast("已添加");
-            }
         });
 
         // 添加图片表情（图片转表情）
