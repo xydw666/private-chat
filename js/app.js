@@ -1090,12 +1090,66 @@ const App = (function () {
         dom.cardOverlay.addEventListener("click", () => closeDrawer(dom.cardDrawer, dom.cardOverlay));
 
         // --- 抽屉：设置 ---
+        let _isSavingDelay = false; // 防重入标志，避免 blur 和关闭抽屉重复触发
+        // 只允许输入数字和小数点，过滤异常字符
+        function _sanitizeDelayInput() {
+            const el = dom.typingDelayInput;
+            let val = el.value.replace(/[^\d.]/g, "");
+            const parts = val.split(".");
+            if (parts.length > 2) {
+                val = parts[0] + "." + parts.slice(1).join("");
+            }
+            if (val !== el.value) {
+                el.value = val;
+            }
+            return val;
+        }
+        // 统一的保存函数（带防重入，保存后从 Storage 读回验证）
+        function _saveTypingDelay(showToast) {
+            if (_isSavingDelay) return;
+            _isSavingDelay = true;
+            try {
+                const raw = _sanitizeDelayInput();
+                if (raw === "" || raw === ".") {
+                    // 空值：恢复为当前保存的值
+                    dom.typingDelayInput.value = Settings.getOne("typingDelay");
+                    return;
+                }
+                const val = parseFloat(raw);
+                if (isNaN(val) || val < 0) {
+                    dom.typingDelayInput.value = Settings.getOne("typingDelay");
+                    if (showToast) UI.toast("请输入有效数字");
+                    return;
+                }
+                let finalVal = val;
+                if (val > 600) {
+                    finalVal = 600;
+                    if (showToast) UI.toast("最大为 600 秒（10分钟）");
+                } else if (showToast) {
+                    UI.toast("已保存");
+                }
+                // 写入存储
+                Settings.set("typingDelay", finalVal);
+                // 关键：从 Storage 读回来确认，再回填到输入框
+                // 防止任何浏览器/键盘的二次修改导致显示值与实际值不一致
+                const verified = Settings.getOne("typingDelay");
+                dom.typingDelayInput.value = verified;
+            } finally {
+                // 确保标志位在下一帧重置，避免递归
+                setTimeout(() => { _isSavingDelay = false; }, 0);
+            }
+        }
+
         dom.settingsBtn.addEventListener("click", () => {
             renderSettings();
             openDrawer(dom.settingsDrawer, dom.settingsOverlay);
         });
-        dom.closeSettingsBtn.addEventListener("click", () => closeDrawer(dom.settingsDrawer, dom.settingsOverlay));
-        dom.settingsOverlay.addEventListener("click", () => closeDrawer(dom.settingsDrawer, dom.settingsOverlay));
+        function _closeSettingsDrawer() {
+            _saveTypingDelay(false); // 关闭抽屉时静默保存
+            closeDrawer(dom.settingsDrawer, dom.settingsOverlay);
+        }
+        dom.closeSettingsBtn.addEventListener("click", _closeSettingsDrawer);
+        dom.settingsOverlay.addEventListener("click", _closeSettingsDrawer);
 
         // --- 字卡添加 ---
         dom.addCardBtn.addEventListener("click", () => {
@@ -1178,16 +1232,8 @@ const App = (function () {
         });
 
         // --- 设置项：对话体验 ---
-        dom.typingDelayInput.addEventListener("change", () => {
-            const val = parseFloat(dom.typingDelayInput.value);
-            if (isNaN(val) || val < 0) {
-                Settings.set("typingDelay", 0.8);
-                dom.typingDelayInput.value = 0.8;
-            } else {
-                Settings.set("typingDelay", Math.min(val, 10));
-            }
-            UI.toast("已保存");
-        });
+        // 失焦时保存并弹 toast（关闭抽屉时也会兜底保存）
+        dom.typingDelayInput.addEventListener("blur", () => _saveTypingDelay(true));
         dom.typingAnimToggle.addEventListener("change", () => {
             Settings.set("typingAnimation", dom.typingAnimToggle.checked);
         });
