@@ -11,6 +11,7 @@ const Storage = (function () {
     const KEYS = {
         MESSAGES: PREFIX + "messages",
         CARDS: PREFIX + "cards",
+        CARD_GROUPS: PREFIX + "card_groups",  // 字卡分组
         SETTINGS: PREFIX + "settings",
         META: PREFIX + "meta",
         EMOJIS: PREFIX + "emojis",  // 自定义表情
@@ -117,6 +118,7 @@ const Storage = (function () {
             const initial = DEFAULT_CARDS.map((text) => ({
                 id: generateId("card"),
                 text: text,
+                group: "default",
                 createdAt: Date.now(),
                 useCount: 0,
             }));
@@ -128,6 +130,15 @@ const Storage = (function () {
 
     function saveCards(cards) {
         return write(KEYS.CARDS, cards);
+    }
+
+    // ========== 字卡分组读写 ==========
+    function getCardGroups() {
+        return read(KEYS.CARD_GROUPS, []);
+    }
+
+    function saveCardGroups(groups) {
+        return write(KEYS.CARD_GROUPS, groups);
     }
 
     // ========== 设置读写 ==========
@@ -171,11 +182,12 @@ const Storage = (function () {
         return {
             messages: getMessages(),
             cards: getCards(),
+            cardGroups: getCardGroups(),
             settings: getSettings(),
             meta: getMeta(),
             emojis: getEmojis(),
             exportDate: Date.now(),
-            version: 2,
+            version: 3,
         };
     }
 
@@ -183,6 +195,7 @@ const Storage = (function () {
         if (!data || typeof data !== "object") return false;
         if (data.messages) saveMessages(data.messages);
         if (data.cards) saveCards(data.cards);
+        if (data.cardGroups) saveCardGroups(data.cardGroups);
         if (data.settings) saveSettings(data.settings);
         if (data.meta) saveMeta(data.meta);
         if (data.emojis) saveEmojis(data.emojis);
@@ -218,6 +231,7 @@ const Storage = (function () {
     function resetAll() {
         localStorage.removeItem(KEYS.MESSAGES);
         localStorage.removeItem(KEYS.CARDS);
+        localStorage.removeItem(KEYS.CARD_GROUPS);
         localStorage.removeItem(KEYS.SETTINGS);
         localStorage.removeItem(KEYS.META);
         localStorage.removeItem(KEYS.EMOJIS);
@@ -227,6 +241,7 @@ const Storage = (function () {
         generateId,
         getMessages, saveMessages, addMessage, clearMessages,
         getCards, saveCards,
+        getCardGroups, saveCardGroups,
         getSettings, saveSettings, getSetting, setSetting,
         getMeta, saveMeta,
         getEmojis, saveEmojis, addEmoji, removeEmoji,

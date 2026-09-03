@@ -43,42 +43,44 @@
             </div>
         </main>
 
-        <!-- ========== 底部输入区域 ========== -->
-        <footer class="chat-footer" id="chatFooter">
-            <div class="input-wrapper">
-                <button class="icon-btn emoji-btn" id="emojiBtn" title="表情">
-                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-                        <line x1="9" y1="9" x2="9.01" y2="9"/>
-                        <line x1="15" y1="9" x2="15.01" y2="9"/>
-                    </svg>
-                </button>
-                <textarea class="message-input" id="messageInput" placeholder="说点什么..." rows="1"></textarea>
-                <button class="send-btn" id="sendBtn" title="发送">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13"/>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
-                </button>
-            </div>
-        </footer>
-
-        <!-- ========== 表情面板 ========== -->
-        <div class="emoji-panel" id="emojiPanel">
-            <div class="emoji-tabs">
-                <button class="emoji-tab active" data-tab="default">表情</button>
-                <button class="emoji-tab" data-tab="custom">自定义</button>
-            </div>
-            <div class="emoji-tab-content" id="emojiTabDefault">
-                <div class="emoji-grid" id="emojiGrid"></div>
-            </div>
-            <div class="emoji-tab-content" id="emojiTabCustom" style="display:none;">
-                <div class="custom-emoji-actions">
-                    <button class="btn-mini" id="addTextEmojiBtn">+ 文字表情</button>
-                    <button class="btn-mini" id="addImageEmojiBtn">+ 图片表情</button>
+        <!-- ========== 底部输入区 + 表情面板 ========== -->
+        <div class="chat-bottom-area" id="chatBottomArea">
+            <footer class="chat-footer" id="chatFooter">
+                <div class="input-wrapper">
+                    <button class="icon-btn emoji-btn" id="emojiBtn" title="表情">
+                        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                            <line x1="9" y1="9" x2="9.01" y2="9"/>
+                            <line x1="15" y1="9" x2="15.01" y2="9"/>
+                        </svg>
+                    </button>
+                    <textarea class="message-input" id="messageInput" placeholder="说点什么..." rows="1"></textarea>
+                    <button class="send-btn" id="sendBtn" title="发送">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
                 </div>
-                <div class="emoji-grid" id="customEmojiGrid"></div>
+            </footer>
+
+            <!-- ========== 表情面板 ========== -->
+            <div class="emoji-panel" id="emojiPanel">
+                <div class="emoji-tabs">
+                    <button class="emoji-tab active" data-tab="default">表情</button>
+                    <button class="emoji-tab" data-tab="custom">自定义</button>
+                </div>
+                <div class="emoji-tab-content" id="emojiTabDefault">
+                    <div class="emoji-grid" id="emojiGrid"></div>
+                </div>
+                <div class="emoji-tab-content" id="emojiTabCustom" style="display:none;">
+                    <div class="custom-emoji-actions">
+                        <button class="btn-mini" id="addTextEmojiBtn">+ 文字表情</button>
+                        <button class="btn-mini" id="addImageEmojiBtn">+ 图片表情</button>
+                    </div>
+                    <div class="emoji-grid" id="customEmojiGrid"></div>
+                </div>
             </div>
         </div>
 
@@ -111,7 +113,24 @@
                 </div>
                 <div class="card-add-area">
                     <textarea class="card-input" id="cardInput" placeholder="输入字卡内容，每行一张字卡..." rows="3"></textarea>
-                    <button class="btn-primary" id="addCardBtn">添加到字卡库</button>
+                    <div class="card-add-row">
+                        <select class="setting-input card-group-select" id="cardGroupSelect">
+                            <option value="default">默认分组</option>
+                        </select>
+                        <button class="btn-primary" id="addCardBtn">添加到字卡库</button>
+                    </div>
+                </div>
+                <div class="card-group-bar">
+                    <div class="card-group-tabs" id="cardGroupTabs">
+                        <button class="group-tab active" data-group="all">全部</button>
+                        <button class="group-tab" data-group="default">默认</button>
+                    </div>
+                    <button class="btn-mini" id="addGroupBtn">+ 新建分组</button>
+                </div>
+                <div class="card-group-manage" id="cardGroupManage" style="display:none;">
+                    <button class="btn-mini" id="renameGroupBtn">重命名</button>
+                    <button class="btn-mini btn-mini-danger" id="deleteGroupBtn">删除分组</button>
+                    <button class="btn-mini" id="exitGroupManageBtn">完成</button>
                 </div>
                 <div class="card-toolbar">
                     <input type="text" class="search-input" id="cardSearch" placeholder="搜索字卡...">

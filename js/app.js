@@ -78,6 +78,15 @@ const App = (function () {
         dom.batchDeleteBtn = UI.$("#batchDeleteBtn");
         dom.exitBatchBtn = UI.$("#exitBatchBtn");
 
+        // 字卡分组
+        dom.cardGroupSelect = UI.$("#cardGroupSelect");
+        dom.cardGroupTabs = UI.$("#cardGroupTabs");
+        dom.addGroupBtn = UI.$("#addGroupBtn");
+        dom.cardGroupManage = UI.$("#cardGroupManage");
+        dom.renameGroupBtn = UI.$("#renameGroupBtn");
+        dom.deleteGroupBtn = UI.$("#deleteGroupBtn");
+        dom.exitGroupManageBtn = UI.$("#exitGroupManageBtn");
+
         dom.userNameInput = UI.$("#userNameInput");
         dom.userAvatarInput = UI.$("#userAvatarInput");
         dom.userAvatarPreview = UI.$("#userAvatarPreview");
@@ -297,7 +306,14 @@ const App = (function () {
 
         if (cards.length === 0) {
             const empty = UI.createElement("div", "card-empty");
-            empty.textContent = query ? "没有找到匹配的字卡" : "还没有字卡，添加一些吧";
+            const activeGroup = CardManager.getActiveGroup();
+            if (query) {
+                empty.textContent = "没有找到匹配的字卡";
+            } else if (activeGroup !== "all") {
+                empty.textContent = "该分组下还没有字卡";
+            } else {
+                empty.textContent = "还没有字卡，添加一些吧";
+            }
             dom.cardList.appendChild(empty);
         } else {
             cards.forEach((card) => {
@@ -412,16 +428,45 @@ const App = (function () {
                 if (CardManager.remove(id)) count++;
             });
             UI.toast(`已删除 ${count} 张字卡`);
+            _renderGroupTabs();
             _exitBatchMode();
         }
     }
 
     function _editCard(card) {
+        // 构建分组选项文本
+        const groups = CardManager.getGroups();
+        let groupOptions = "0. 默认分组";
+        groups.forEach((g, i) => {
+            groupOptions += `\n${i + 1}. ${g.name}`;
+        });
+
         const newText = prompt("编辑字卡内容：", card.text);
         if (newText !== null && newText.trim() && newText.trim() !== card.text) {
             if (CardManager.update(card.id, newText)) {
                 UI.toast("字卡已更新");
                 renderCardList();
+            }
+        }
+
+        // 提供移动分组选项
+        const moveChoice = prompt(
+            `移动"${card.text.substring(0, 20)}..."到其他分组？\n输入序号选择分组（留空跳过）：\n${groupOptions}`,
+            ""
+        );
+        if (moveChoice !== null && moveChoice.trim()) {
+            const idx = parseInt(moveChoice.trim());
+            let targetGroupId;
+            if (idx === 0) {
+                targetGroupId = "default";
+            } else if (idx > 0 && idx <= groups.length) {
+                targetGroupId = groups[idx - 1].id;
+            }
+            if (targetGroupId && targetGroupId !== card.group) {
+                CardManager.moveCard(card.id, targetGroupId);
+                _renderGroupTabs();
+                renderCardList();
+                UI.toast("已移动到新分组");
             }
         }
     }
@@ -431,6 +476,7 @@ const App = (function () {
         if (confirmed) {
             CardManager.remove(card.id);
             UI.toast("已删除");
+            _renderGroupTabs();
             renderCardList();
         }
     }
@@ -439,6 +485,132 @@ const App = (function () {
         dom.totalCards.textContent = CardManager.count();
         dom.totalMessages.textContent = Chat.count();
         dom.totalDays.textContent = Chat.getChatDays();
+    }
+
+    // ============================================
+    // 渲染：分组标签
+    // ============================================
+    function _renderGroupTabs() {
+        const activeGroup = CardManager.getActiveGroup();
+        const groups = CardManager.getGroups();
+        const tabs = dom.cardGroupTabs;
+        tabs.innerHTML = "";
+
+        // "全部" 标签
+        const allTab = UI.createElement("button", "group-tab");
+        allTab.textContent = `全部 (${CardManager.countByGroup("all")})`;
+        allTab.dataset.group = "all";
+        if (activeGroup === "all") allTab.classList.add("active");
+        tabs.appendChild(allTab);
+
+        // "默认" 标签
+        const defaultTab = UI.createElement("button", "group-tab");
+        defaultTab.textContent = `默认 (${CardManager.countByGroup("default")})`;
+        defaultTab.dataset.group = "default";
+        if (activeGroup === "default") defaultTab.classList.add("active");
+        tabs.appendChild(defaultTab);
+
+        // 自定义分组
+        groups.forEach((g) => {
+            const tab = UI.createElement("button", "group-tab");
+            tab.textContent = `${g.name} (${CardManager.countByGroup(g.id)})`;
+            tab.dataset.group = g.id;
+            if (activeGroup === g.id) tab.classList.add("active");
+            tabs.appendChild(tab);
+        });
+
+        // 标签点击事件
+        tabs.querySelectorAll(".group-tab").forEach((tab) => {
+            tab.addEventListener("click", () => {
+                const groupId = tab.dataset.group;
+                CardManager.setActiveGroup(groupId);
+                _renderGroupTabs();
+                renderCardList();
+                _updateGroupManageUI();
+            });
+        });
+
+        _updateGroupSelect();
+    }
+
+    /**
+     * 更新添加字卡时的分组选择下拉框
+     */
+    function _updateGroupSelect() {
+        const select = dom.cardGroupSelect;
+        const currentVal = select.value || "default";
+        select.innerHTML = "";
+
+        const defaultOpt = UI.createElement("option");
+        defaultOpt.value = "default";
+        defaultOpt.textContent = "默认分组";
+        select.appendChild(defaultOpt);
+
+        CardManager.getGroups().forEach((g) => {
+            const opt = UI.createElement("option");
+            opt.value = g.id;
+            opt.textContent = g.name;
+            select.appendChild(opt);
+        });
+
+        // 恢复之前的选择
+        if ([...select.options].some((o) => o.value === currentVal)) {
+            select.value = currentVal;
+        } else {
+            select.value = "default";
+        }
+    }
+
+    function _updateGroupManageUI() {
+        const activeGroup = CardManager.getActiveGroup();
+        // 只在选中自定义分组时显示管理按钮
+        if (activeGroup !== "all" && activeGroup !== "default") {
+            dom.cardGroupManage.style.display = "flex";
+        } else {
+            dom.cardGroupManage.style.display = "none";
+        }
+    }
+
+    function _addGroup() {
+        const name = prompt("输入分组名称：");
+        if (!name || !name.trim()) return;
+        const group = CardManager.addGroup(name);
+        if (group) {
+            UI.toast("分组已创建");
+            _renderGroupTabs();
+        } else {
+            UI.toast("分组名已存在");
+        }
+    }
+
+    async function _deleteGroup() {
+        const activeGroup = CardManager.getActiveGroup();
+        const groups = CardManager.getGroups();
+        const group = groups.find((g) => g.id === activeGroup);
+        if (!group) return;
+        const confirmed = await UI.confirm(`删除分组"${group.name}"？\n该分组下的字卡将移至默认分组。`);
+        if (confirmed) {
+            CardManager.removeGroup(activeGroup);
+            CardManager.setActiveGroup("all");
+            _renderGroupTabs();
+            renderCardList();
+            _updateGroupManageUI();
+            UI.toast("分组已删除");
+        }
+    }
+
+    function _renameGroup() {
+        const activeGroup = CardManager.getActiveGroup();
+        const groups = CardManager.getGroups();
+        const group = groups.find((g) => g.id === activeGroup);
+        if (!group) return;
+        const newName = prompt("输入新的分组名称：", group.name);
+        if (newName && newName.trim() && newName.trim() !== group.name) {
+            if (CardManager.renameGroup(activeGroup, newName)) {
+                UI.toast("已重命名");
+                _renderGroupTabs();
+            }
+        }
     }
 
     // ============================================
@@ -504,6 +676,7 @@ const App = (function () {
         renderHeader();
         renderMessages();
         renderCardList();
+        _renderGroupTabs();
         renderSettings();
     }
 
@@ -792,10 +965,12 @@ const App = (function () {
     function _addCardsFromInput() {
         const text = dom.cardInput.value.trim();
         if (!text) return;
-        const added = CardManager.addBatch(text);
+        const groupId = dom.cardGroupSelect.value || "default";
+        const added = CardManager.addBatch(text, groupId);
         dom.cardInput.value = "";
         if (added.length > 0) {
             UI.toast(`添加了 ${added.length} 张字卡`);
+            _renderGroupTabs();
         } else {
             UI.toast("字卡已存在或内容为空");
         }
@@ -850,7 +1025,9 @@ const App = (function () {
 
         // --- 抽屉：字卡管理 ---
         dom.cardMgrBtn.addEventListener("click", () => {
+            _renderGroupTabs();
             renderCardList();
+            _updateGroupManageUI();
             openDrawer(dom.cardDrawer, dom.cardOverlay);
         });
         dom.closeCardBtn.addEventListener("click", () => closeDrawer(dom.cardDrawer, dom.cardOverlay));
@@ -885,6 +1062,17 @@ const App = (function () {
         dom.selectAllBtn.addEventListener("click", _selectAllCards);
         dom.deselectAllBtn.addEventListener("click", _deselectAllCards);
         dom.batchDeleteBtn.addEventListener("click", _batchDeleteCards);
+
+        // --- 字卡分组 ---
+        dom.addGroupBtn.addEventListener("click", _addGroup);
+        dom.renameGroupBtn.addEventListener("click", _renameGroup);
+        dom.deleteGroupBtn.addEventListener("click", _deleteGroup);
+        dom.exitGroupManageBtn.addEventListener("click", () => {
+            CardManager.setActiveGroup("all");
+            _renderGroupTabs();
+            renderCardList();
+            _updateGroupManageUI();
+        });
 
         // --- 设置项：个人信息 ---
         dom.userNameInput.addEventListener("change", () => {
