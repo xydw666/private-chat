@@ -12,11 +12,6 @@ const Settings = (function () {
      */
     function init() {
         settings = Storage.getSettings();
-        // 兼容旧版毫秒值：如果 typingDelay > 10，说明是旧的毫秒值，自动转换为秒
-        if (settings.typingDelay && settings.typingDelay > 10) {
-            settings.typingDelay = settings.typingDelay / 1000;
-            Storage.saveSettings(settings);
-        }
         applyTheme(settings.theme);
         applyBackground(settings.background || "default");
     }
